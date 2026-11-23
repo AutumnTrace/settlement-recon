@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\benchmarks\SettlementRecon.Baseline\SettlementRecon.Baseline.csproj" />
     <ProjectReference Include="..\..\src\SettlementRecon.Cli\SettlementRecon.Cli.csproj" />
     <ProjectReference Include="..\..\src\SettlementRecon.Core\SettlementRecon.Core.csproj" />
     <ProjectReference Include="..\..\src\SettlementRecon.SampleData\SettlementRecon.SampleData.csproj" />
