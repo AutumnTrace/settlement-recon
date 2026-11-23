@@ -1,0 +1,41 @@
+# Worker + MongoDB:  docker compose up --build
+# API: http://localhost:8080/api/runs   (a generated sample run is reconciled on first start)
+# Drop more runs in with:  docker compose cp ./my-run recon:/data/inbox/
+
+services:
+  mongo:
+    image: mongo:8.0
+    environment:
+      # Demo credentials. Use a secret store and a least-privilege user in production.
+      MONGO_INITDB_ROOT_USERNAME: recon
+      MONGO_INITDB_ROOT_PASSWORD: recon-demo-password
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  recon:
+    build: .
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      Storage__Provider: Mongo
+      Storage__Mongo__ConnectionString: mongodb://recon:recon-demo-password@mongo:27017/?authSource=admin
+      Demo__SeedSampleRun: "true"
+      Inbox__PollInterval: "00:00:02"
+      # Point at an OpenTelemetry collector to export metrics and traces:
+      # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    volumes:
+      - recon-data:/data
+
+volumes:
+  mongo-data:
+  recon-data:
