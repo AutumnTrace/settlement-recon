@@ -67,7 +67,12 @@ internal sealed class MoneyJsonConverter : JsonConverter<Money>
                         : throw new JsonException("Unsupported currency.");
                     break;
                 default:
-                    reader.Skip();
+                    // The whole value is buffered for custom converters, but Skip() refuses non-final blocks.
+                    if (!reader.TrySkip())
+                    {
+                        throw new JsonException("Incomplete money object.");
+                    }
+
                     break;
             }
         }

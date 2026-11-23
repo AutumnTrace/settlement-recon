@@ -7,27 +7,27 @@ namespace SettlementRecon.Monetary;
 /// <summary>
 /// A currency code with its minor-unit exponent (EUR = 2, JPY = 0, BHD = 3, USDT = 6).
 /// Only codes in the built-in table are accepted, so an exponent is never guessed.
-/// The value is a packed 32-bit code, which keeps ledger slots small and makes equality a single compare.
+/// The value packs the letters (5 bits each) and the exponent into 32 bits, which keeps ledger slots small and
+/// makes equality a single integer compare.
 /// </summary>
 [JsonConverter(typeof(CurrencyJsonConverter))]
 public readonly struct Currency : IEquatable<Currency>
 {
     private static readonly FrozenDictionary<uint, (string Code, byte Exponent)> Known = BuildTable();
 
-    private readonly uint _packed;
-    private readonly byte _exponent;
+    private const int ExponentShift = 20;
+    private const uint LetterMask = (1u << ExponentShift) - 1;
 
-    private Currency(uint packed, byte exponent)
-    {
-        _packed = packed;
-        _exponent = exponent;
-    }
+    // Bits 0-19: up to four letters, 5 bits each (A = 1). Bits 20-23: the exponent.
+    private readonly uint _packed;
+
+    private Currency(uint letters, byte exponent) => _packed = letters | ((uint)exponent << ExponentShift);
 
     /// <summary>Number of digits after the decimal separator in the minor unit.</summary>
-    public int Exponent => _exponent;
+    public int Exponent => (int)(_packed >> ExponentShift);
 
     /// <summary>The upper-case code, for example <c>EUR</c>. Empty for <c>default</c>.</summary>
-    public string Code => _packed == 0 ? string.Empty : Known[_packed].Code;
+    public string Code => _packed == 0 ? string.Empty : Known[_packed & LetterMask].Code;
 
     public bool IsDefault => _packed == 0;
 
@@ -64,7 +64,7 @@ public readonly struct Currency : IEquatable<Currency>
                 return false;
             }
 
-            packed |= (uint)b << (8 * i);
+            packed |= (uint)(b - 'A' + 1) << (5 * i);
         }
 
         if (!Known.TryGetValue(packed, out var entry))
@@ -137,7 +137,7 @@ public readonly struct Currency : IEquatable<Currency>
                 uint packed = 0;
                 for (var i = 0; i < code.Length; i++)
                 {
-                    packed |= (uint)code[i] << (8 * i);
+                    packed |= (uint)(code[i] - 'A' + 1) << (5 * i);
                 }
 
                 table.Add(packed, (code, exponent));

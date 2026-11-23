@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Deterministic, seeded generator of ledger and settlement files with known, injected breaks.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SettlementRecon.Core\SettlementRecon.Core.csproj" />
+  </ItemGroup>
+
+</Project>

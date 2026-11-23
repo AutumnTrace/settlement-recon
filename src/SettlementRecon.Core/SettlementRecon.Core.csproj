@@ -6,7 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.IO.Hashing" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="SettlementRecon.Tests" />
+    <InternalsVisibleTo Include="SettlementRecon.Benchmarks" />
   </ItemGroup>
 
 </Project>
