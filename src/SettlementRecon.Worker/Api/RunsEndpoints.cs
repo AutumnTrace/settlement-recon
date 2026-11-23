@@ -106,7 +106,7 @@ public static class RunsEndpoints
         return TypedResults.Ok(await store.GetItemsAsync(runId, new ItemQuery(kind, statusFilter, provider, skip, take), cancellationToken));
     }
 
-    private static async Task<Results<ContentHttpResult, ProblemHttpResult>> GetMarkdown(string runId, IRunStore store, CancellationToken cancellationToken, int items = 25)
+    private static async Task<Results<ContentHttpResult, ProblemHttpResult>> GetMarkdown(string runId, IRunStore store, CancellationToken cancellationToken, int examples = 3)
     {
         var run = await store.GetAsync(runId, cancellationToken);
         if (run is null)
@@ -114,10 +114,16 @@ public static class RunsEndpoints
             return RunNotFound(runId);
         }
 
-        var take = Math.Clamp(items, 1, MaxTake);
-        var breaks = await store.GetItemsAsync(runId, new ItemQuery(ItemKind.Break, null, null, 0, take), cancellationToken);
+        // The summary shows a few examples of each break type, so fetch exactly those instead of the whole run.
+        var take = Math.Clamp(examples, 1, 50);
+        var breaks = new List<ReconItem>();
+        foreach (var status in Enum.GetValues<ReconStatus>().Where(s => s.IsBreak() && run.Report.Summary.Outcomes[s] > 0))
+        {
+            breaks.AddRange((await store.GetItemsAsync(runId, new ItemQuery(ItemKind.Break, status, null, 0, take), cancellationToken)).Items);
+        }
+
         var reviews = await store.GetItemsAsync(runId, new ItemQuery(ItemKind.Review, null, null, 0, take), cancellationToken);
-        var report = run.Report with { Breaks = breaks.Items, ReviewMatches = reviews.Items };
+        var report = run.Report with { Breaks = breaks, ReviewMatches = reviews.Items };
         return TypedResults.Text(MarkdownReport.Render(report, take), "text/markdown; charset=utf-8");
     }
 

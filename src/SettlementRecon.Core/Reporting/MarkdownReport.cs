@@ -5,12 +5,17 @@ using SettlementRecon.Monetary;
 
 namespace SettlementRecon.Reporting;
 
-/// <summary>Renders a report as GitHub-flavoured Markdown: a summary a person can read in a pull request, chat or email.</summary>
+/// <summary>
+/// Renders a report as GitHub-flavoured Markdown: a summary a person can skim in a pull request, chat or email.
+/// It shows counts for everything and a few examples of each break type; the full list is in the JSON report and the API.
+/// </summary>
 public static class MarkdownReport
 {
+    private const int MaxIssues = 10;
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
 
-    public static string Render(ReconciliationReport report, int maxItems = 25)
+    /// <param name="examplesPerType">Explained breaks shown per break type (and review matches shown in total).</param>
+    public static string Render(ReconciliationReport report, int examplesPerType = 3)
     {
         var md = new StringBuilder();
         var s = report.Summary;
@@ -55,28 +60,54 @@ public static class MarkdownReport
             md.AppendLine();
         }
 
-        AppendItems(md, "Breaks", report.Breaks, s.Breaks, maxItems);
-        AppendItems(md, "Matched without a reference (please review)", report.ReviewMatches, report.ReviewMatches.Count, maxItems);
-        AppendIssues(md, report, maxItems);
+        if (s.Breaks > 0)
+        {
+            AppendBreakMatrix(md, report);
+            var examples = Enum.GetValues<ReconStatus>()
+                .Where(status => status.IsBreak())
+                .SelectMany(status => report.Breaks.Where(b => b.Status == status).Take(examplesPerType))
+                .ToArray();
+            AppendItems(md, string.Create(Invariant, $"Break examples (up to {examplesPerType} per type)"), examples);
+        }
+
+        if (report.ReviewMatches.Count > 0)
+        {
+            var reviews = report.ReviewMatches.Take(examplesPerType).ToArray();
+            var title = reviews.Length < s.MatchedByRule.AmountAndDate
+                ? string.Create(Invariant, $"Matched without a reference, to review ({reviews.Length} of {s.MatchedByRule.AmountAndDate:#,0})")
+                : "Matched without a reference, to review";
+            AppendItems(md, title, reviews);
+        }
+
+        AppendIssues(md, report);
 
         var t = report.Settings;
-        md.AppendLine(Invariant, $"<sub>Tolerances: amount max({t.AmountToleranceMinor} minor units, {t.AmountToleranceBps} bps) · fee {t.FeeToleranceMinor} minor units · date window {t.DateWindowDays} days · amount-and-date fallback {(t.AmountAndDateFallback ? "on" : "off")}</sub>");
+        md.AppendLine(Invariant, $"<sub>Tolerances: amount max({MinorUnitsText(t.AmountToleranceMinor)}, {t.AmountToleranceBps} bps) · fee {MinorUnitsText(t.FeeToleranceMinor)} · date window {t.DateWindowDays} days · amount-and-date fallback {(t.AmountAndDateFallback ? "on" : "off")}</sub>");
         return md.ToString();
     }
 
-    private static void AppendItems(StringBuilder md, string title, IReadOnlyList<ReconItem> items, long total, int maxItems)
+    private static void AppendBreakMatrix(StringBuilder md, ReconciliationReport report)
     {
-        if (items.Count == 0)
+        var types = Enum.GetValues<ReconStatus>().Where(status => status.IsBreak()).ToArray();
+        md.AppendLine("## Breaks by provider");
+        md.AppendLine();
+        md.AppendLine("| Provider | " + string.Join(" | ", types.Select(t => t.ToDisplayName())) + " | Total |");
+        md.AppendLine("|---|" + string.Concat(Enumerable.Repeat("---:|", types.Length + 1)));
+        foreach (var p in report.Providers)
         {
-            return;
+            md.AppendLine(Invariant, $"| {p.Provider} | {string.Join(" | ", types.Select(t => p.Outcomes[t].ToString("#,0", Invariant)))} | **{p.Outcomes.Breaks:#,0}** |");
         }
 
-        var shown = Math.Min(items.Count, maxItems);
-        md.AppendLine(Invariant, $"## {title}{(shown < total ? string.Create(Invariant, $" (first {shown} of {total:#,0})") : string.Empty)}");
+        md.AppendLine();
+    }
+
+    private static void AppendItems(StringBuilder md, string title, IReadOnlyList<ReconItem> items)
+    {
+        md.AppendLine(Invariant, $"## {title}");
         md.AppendLine();
         md.AppendLine("| Provider | Outcome | Reference | PSP | Ledger | Difference | Reason |");
         md.AppendLine("|---|---|---|---:|---:|---:|---|");
-        foreach (var item in items.Take(shown))
+        foreach (var item in items)
         {
             md.AppendLine(Invariant,
                 $"| {item.Provider} | {Icon(item.Status)} {item.Status.ToDisplayName()} | `{Escape(item.Reference)}` | {Amount(item.PspAmount)} | {Amount(item.LedgerAmount)} | {Signed(item.Difference)} | {Escape(item.Reason)} |");
@@ -85,7 +116,7 @@ public static class MarkdownReport
         md.AppendLine();
     }
 
-    private static void AppendIssues(StringBuilder md, ReconciliationReport report, int maxItems)
+    private static void AppendIssues(StringBuilder md, ReconciliationReport report)
     {
         var issues = report.Ledger.Issues.Concat(report.Providers.SelectMany(p => p.Files.SelectMany(f => f.Issues))).ToArray();
         if (issues.Length == 0)
@@ -94,7 +125,7 @@ public static class MarkdownReport
         }
 
         var total = report.Summary.RejectedLines;
-        var shown = Math.Min(issues.Length, maxItems);
+        var shown = Math.Min(issues.Length, MaxIssues);
         md.AppendLine(Invariant, $"## Rejected lines{(shown < total ? string.Create(Invariant, $" (first {shown} of {total:#,0})") : string.Empty)}");
         md.AppendLine();
         md.AppendLine("| File | Line | Problem |");
@@ -109,6 +140,8 @@ public static class MarkdownReport
 
     private static string Totals(ProviderReport provider, Func<CurrencyTotals, Money> pick) =>
         provider.Settled.Count == 0 ? "–" : string.Join("<br/>", provider.Settled.Select(t => pick(t).ToString()));
+
+    private static string MinorUnitsText(long units) => units == 1 ? "1 minor unit" : string.Create(Invariant, $"{units} minor units");
 
     private static string Amount(Money? money) => money?.ToString() ?? "–";
 
