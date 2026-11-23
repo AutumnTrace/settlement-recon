@@ -3,6 +3,7 @@
     <Project Path="src/SettlementRecon.Core/SettlementRecon.Core.csproj" />
     <Project Path="src/SettlementRecon.Cli/SettlementRecon.Cli.csproj" />
     <Project Path="src/SettlementRecon.SampleData/SettlementRecon.SampleData.csproj" />
+    <Project Path="src/SettlementRecon.Worker/SettlementRecon.Worker.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SettlementRecon.Tests/SettlementRecon.Tests.csproj" />

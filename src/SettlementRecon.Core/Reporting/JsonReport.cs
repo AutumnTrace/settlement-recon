@@ -10,6 +10,7 @@ namespace SettlementRecon.Reporting;
     UseStringEnumConverter = true,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(ReconciliationReport))]
+[JsonSerializable(typeof(ReconItem))]
 public sealed partial class ReconJsonContext : JsonSerializerContext;
 
 /// <summary>Reads and writes the JSON report.</summary>

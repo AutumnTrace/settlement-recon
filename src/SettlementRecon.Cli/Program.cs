@@ -1,3 +1,6 @@
-using SettlementRecon.Cli;
+namespace SettlementRecon.Cli;
 
-return await ReconCli.Create().Parse(args).InvokeAsync();
+public static class Program
+{
+    public static Task<int> Main(string[] args) => ReconCli.Create().Parse(args).InvokeAsync();
+}

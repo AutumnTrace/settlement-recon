@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/data/
+.git/
+.github/
+.vs/
+.vscode/
+benchmarks/
+BenchmarkDotNet.Artifacts/
+docs/
+out/
+tests/
+*.md
