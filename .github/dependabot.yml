@@ -16,6 +16,11 @@ updates:
         patterns: ["MongoDB.*", "Testcontainers*"]
       test:
         patterns: ["NUnit*", "FsCheck*", "coverlet.*", "Microsoft.NET.Test.Sdk"]
+    ignore:
+      # The service targets .NET 10 (LTS). ASP.NET Core packages of the next major only run on the next runtime;
+      # moving to it is a deliberate upgrade, not a weekly bump.
+      - dependency-name: "Microsoft.AspNetCore.*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
@@ -29,3 +34,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Same reason: the SDK and runtime images stay on the 10.0 line until the project retargets.
+      - dependency-name: "dotnet/*"
+        update-types: ["version-update:semver-major"]
