@@ -22,14 +22,17 @@ jobs:
         with:
           global-json-file: global.json
 
+      # No-build extraction reads the sources directly, so source-generated files under obj/ (System.Text.Json,
+      # OpenAPI) are not analysed as if they were ours. Security queries only: style findings belong in the build.
       - uses: github/codeql-action/init@v4
         with:
           languages: csharp
-          build-mode: manual
-          queries: security-and-quality
-
-      - name: Build
-        run: dotnet build -c Release
+          build-mode: none
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - "**/obj/**"
+              - "**/bin/**"
 
       - uses: github/codeql-action/analyze@v4
         with:
