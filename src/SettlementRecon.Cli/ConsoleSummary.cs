@@ -38,12 +38,16 @@ internal static class ConsoleSummary
                 $"  {p.Provider,-10}{p.SettlementLines,10:#,0}{p.LedgerEntries,10:#,0}{p.Outcomes.Matched,10:#,0}{p.Outcomes.Breaks,8:#,0}"));
         }
 
-        var shown = report.Breaks.Take(5).ToArray();
-        if (shown.Length > 0)
+        var examples = Enum.GetValues<ReconStatus>()
+            .Where(status => status.IsBreak())
+            .Select(status => report.Breaks.FirstOrDefault(b => b.Status == status))
+            .OfType<ReconItem>()
+            .ToArray();
+        if (examples.Length > 0)
         {
             output.WriteLine();
-            output.WriteLine(string.Create(Invariant, $"  First breaks ({shown.Length} of {s.Breaks:#,0}):"));
-            foreach (var item in shown)
+            output.WriteLine("  One example per break type:");
+            foreach (var item in examples)
             {
                 output.WriteLine($"  - [{item.Provider}] {item.Status.ToDisplayName()}: {item.Reason}");
             }

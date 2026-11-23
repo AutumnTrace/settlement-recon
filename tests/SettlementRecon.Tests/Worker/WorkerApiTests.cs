@@ -92,12 +92,13 @@ public class WorkerApiTests
     [Test]
     public async Task Summary_markdown_is_served_as_markdown()
     {
-        var response = await _client.GetAsync($"/api/runs/{_run.RunId}/summary.md?items=3");
+        var response = await _client.GetAsync($"/api/runs/{_run.RunId}/summary.md?examples=2");
 
         Assert.That(response.Content.Headers.ContentType!.MediaType, Is.EqualTo("text/markdown"));
         var text = await response.Content.ReadAsStringAsync();
         Assert.That(text, Does.StartWith("# Settlement reconciliation"));
-        Assert.That(text, Does.Contain($"## Breaks (first 3 of {_run.Breaks:#,0})"));
+        Assert.That(text, Does.Contain("## Break examples (up to 2 per type)"));
+        Assert.That(text, Does.Contain("## Breaks by provider"));
     }
 
     [Test]

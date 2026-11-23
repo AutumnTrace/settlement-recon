@@ -112,13 +112,18 @@ public class GeneratedDataTests
         using var temp = new TempDirectory();
         var (_, report) = await GenerateAndRun(temp, 5, 2_000, 0.05);
 
-        var markdown = MarkdownReport.Render(report, maxItems: 5);
+        var markdown = MarkdownReport.Render(report, examplesPerType: 2);
 
         Assert.That(markdown, Does.StartWith("# Settlement reconciliation"));
         Assert.That(markdown, Does.Contain("| ✅ Matched |"));
         Assert.That(markdown, Does.Contain("## Providers"));
-        Assert.That(markdown, Does.Contain($"## Breaks (first 5 of {report.Summary.Breaks:#,0})"));
-        Assert.That(markdown, Does.Contain("Tolerances: amount max(1 minor units, 5 bps)"));
+        Assert.That(markdown, Does.Contain("## Breaks by provider"));
+        Assert.That(markdown, Does.Contain("## Break examples (up to 2 per type)"));
+        var itemRows = markdown.Split('\n').Count(l => l.StartsWith("| orbit |", StringComparison.Ordinal)
+            || l.StartsWith("| canal |", StringComparison.Ordinal)
+            || l.StartsWith("| hashrail |", StringComparison.Ordinal));
+        Assert.That(itemRows, Is.LessThanOrEqualTo(3 + (6 * 2) + 2), "matrix rows, at most two examples per type, at most two review matches");
+        Assert.That(markdown, Does.Contain("Tolerances: amount max(1 minor unit, 5 bps) · fee 1 minor unit"));
     }
 
     private static Dictionary<string, string> Hashes(string directory) =>

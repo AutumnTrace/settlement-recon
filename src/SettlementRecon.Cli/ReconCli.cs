@@ -48,11 +48,11 @@ public static class ReconCli
         var window = new Option<int>("--date-window-days") { Description = "Date window for the amount-and-date fallback.", DefaultValueFactory = _ => new ReconciliationOptions().DateWindowDays };
         var noFallback = new Option<bool>("--no-fallback") { Description = "Disable pairing by amount and date when the reference does not match." };
         var failOnBreaks = new Option<bool>("--fail-on-breaks") { Description = "Exit with code 2 when there are breaks or rejected lines (for schedulers and CI)." };
-        var maxItems = new Option<int>("--summary-items") { Description = "Breaks listed in summary.md (report.json always has all of them).", DefaultValueFactory = _ => 25 };
+        var examples = new Option<int>("--examples") { Description = "Break examples per type in summary.md (report.json always has all of them).", DefaultValueFactory = _ => 3 };
 
         var command = new Command("run", "Reconcile settlement files against a ledger export and write a JSON report and a Markdown summary.")
         {
-            ledger, settlements, providers, output, amountMinor, amountBps, feeMinor, window, noFallback, failOnBreaks, maxItems,
+            ledger, settlements, providers, output, amountMinor, amountBps, feeMinor, window, noFallback, failOnBreaks, examples,
         };
 
         command.SetAction(async (parse, cancellationToken) =>
@@ -93,7 +93,7 @@ public static class ReconCli
                     await JsonReport.WriteAsync(report, json, cancellationToken);
                 }
 
-                await File.WriteAllTextAsync(markdownPath, MarkdownReport.Render(report, parse.GetValue(maxItems)), cancellationToken);
+                await File.WriteAllTextAsync(markdownPath, MarkdownReport.Render(report, Math.Max(1, parse.GetValue(examples))), cancellationToken);
 
                 ConsoleSummary.Write(stdout, report);
                 await stdout.WriteLineAsync();
