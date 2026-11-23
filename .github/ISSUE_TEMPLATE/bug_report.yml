@@ -1,0 +1,33 @@
+name: Bug report
+description: A file was parsed or matched incorrectly, or the worker or API misbehaved
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include the CLI command or API call, and the outcome or reason you got.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Minimal input
+      description: The smallest ledger and settlement lines that reproduce it. Replace real references and amounts with made-up ones, and never paste card numbers.
+      render: text
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options: [Parser, Matching rules, CLI, Worker / inbox, REST API, MongoDB storage, Other]
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      placeholder: v0.1.0
