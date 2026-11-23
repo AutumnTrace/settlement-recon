@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- BenchmarkDotNet needs full PDBs and an optimized build; it refuses Debug. -->
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SettlementRecon.Core\SettlementRecon.Core.csproj" />
+    <ProjectReference Include="..\..\src\SettlementRecon.SampleData\SettlementRecon.SampleData.csproj" />
+    <ProjectReference Include="..\SettlementRecon.Baseline\SettlementRecon.Baseline.csproj" />
+  </ItemGroup>
+
+</Project>

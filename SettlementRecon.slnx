@@ -5,6 +5,10 @@
     <Project Path="src/SettlementRecon.SampleData/SettlementRecon.SampleData.csproj" />
     <Project Path="src/SettlementRecon.Worker/SettlementRecon.Worker.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/SettlementRecon.Baseline/SettlementRecon.Baseline.csproj" />
+    <Project Path="benchmarks/SettlementRecon.Benchmarks/SettlementRecon.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SettlementRecon.Tests/SettlementRecon.Tests.csproj" />
   </Folder>

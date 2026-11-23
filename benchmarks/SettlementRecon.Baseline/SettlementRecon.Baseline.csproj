@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>The straightforward implementation (ReadAllLines, string.Split, decimal.Parse, LINQ). Benchmark baseline and test oracle; never used by the service.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SettlementRecon.Core\SettlementRecon.Core.csproj" />
+  </ItemGroup>
+
+</Project>

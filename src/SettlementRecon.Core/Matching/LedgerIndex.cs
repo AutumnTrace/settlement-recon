@@ -59,13 +59,19 @@ internal struct BatchSlot
 /// <summary>
 /// The build side of the hash join: every in-scope ledger entry of one provider, indexed by reference with an
 /// open-addressing table (linear probing, XxHash3, load factor at most 0.75). Reference bytes live in a chunked
-/// arena, entries in a struct array, so the whole index is a handful of large arrays rather than millions of
-/// small objects. Batch ids get a second, smaller table for one-to-many payout matching.
+/// arena and entries in fixed 1 MiB chunks of structs, so the index is a few hundred large arrays rather than
+/// millions of small objects, and growing it never copies the entries. Batch ids get a second, smaller table
+/// for one-to-many payout matching.
 /// </summary>
 internal sealed class LedgerIndex
 {
+    private const int ChunkShift = 14;
+    private const int ChunkSize = 1 << ChunkShift;
+    private const int ChunkMask = ChunkSize - 1;
+
     private readonly Utf8Arena _text = new(1 << 20);
-    private LedgerSlot[] _slots;
+    private LedgerSlot[][] _chunks = new LedgerSlot[4][];
+    private int _chunkCount;
     private int _count;
     private int[] _table;
     private int _indexed;
@@ -73,11 +79,7 @@ internal sealed class LedgerIndex
     private int _batchCount;
     private int[] _batchTable = new int[32];
 
-    public LedgerIndex(int capacityHint = 1_024)
-    {
-        _slots = new LedgerSlot[Math.Max(16, capacityHint)];
-        _table = new int[TableSizeFor(capacityHint)];
-    }
+    public LedgerIndex(int capacityHint = 1_024) => _table = new int[TableSizeFor(capacityHint)];
 
     public int Count => _count;
 
@@ -85,12 +87,12 @@ internal sealed class LedgerIndex
 
     /// <summary>Approximate bytes held by the index, for diagnostics and the memory discussion in the docs.</summary>
     public long ApproximateBytes =>
-        ((long)_slots.Length * System.Runtime.CompilerServices.Unsafe.SizeOf<LedgerSlot>())
+        ((long)_chunkCount * ChunkSize * System.Runtime.CompilerServices.Unsafe.SizeOf<LedgerSlot>())
         + ((long)_table.Length * sizeof(int))
         + _text.CapacityBytes
         + ((long)_batches.Length * System.Runtime.CompilerServices.Unsafe.SizeOf<BatchSlot>());
 
-    public ref LedgerSlot this[int index] => ref _slots[index];
+    public ref LedgerSlot this[int index] => ref _chunks[index >> ChunkShift][index & ChunkMask];
 
     public ref BatchSlot Batch(int index) => ref _batches[index];
 
@@ -103,16 +105,21 @@ internal sealed class LedgerIndex
 
         if ((_indexed + 1) * 4 > _table.Length * 3)
         {
-            _table = Rehash(_table.Length * 2, _slots, _count, static s => s.State != SlotState.Duplicate, static s => s.Hash);
+            RehashReferences(_table.Length * 2);
         }
 
-        if (_count == _slots.Length)
+        if (_count == _chunkCount * ChunkSize)
         {
-            Array.Resize(ref _slots, _slots.Length * 2);
+            if (_chunkCount == _chunks.Length)
+            {
+                Array.Resize(ref _chunks, _chunks.Length * 2);
+            }
+
+            _chunks[_chunkCount++] = new LedgerSlot[ChunkSize];
         }
 
         var index = _count++;
-        ref var slot = ref _slots[index];
+        ref var slot = ref this[index];
         slot = new LedgerSlot
         {
             Reference = _text.Append(reference),
@@ -187,7 +194,7 @@ internal sealed class LedgerIndex
                 return -1;
             }
 
-            ref var slot = ref _slots[entry - 1];
+            ref var slot = ref this[entry - 1];
             if (slot.Hash == hash && _text[slot.Reference].SequenceEqual(reference))
             {
                 return entry - 1;
@@ -197,13 +204,13 @@ internal sealed class LedgerIndex
 
     private void AddToBatch(int slotIndex, ReadOnlySpan<byte> batchId)
     {
-        ref var slot = ref _slots[slotIndex];
+        ref var slot = ref this[slotIndex];
         var batchIndex = FindBatch(batchId);
         if (batchIndex < 0)
         {
             if ((_batchCount + 1) * 4 > _batchTable.Length * 3)
             {
-                _batchTable = Rehash(_batchTable.Length * 2, _batches, _batchCount, static _ => true, static b => b.Hash);
+                _batchTable = Rehash(_batchTable.Length * 2, _batches, _batchCount);
             }
 
             if (_batchCount == _batches.Length)
@@ -232,15 +239,27 @@ internal sealed class LedgerIndex
         batch.MixedCurrencies |= batch.Currency != slot.Currency;
     }
 
-    private static int[] Rehash<T>(int size, T[] items, int count, Func<T, bool> include, Func<T, uint> hashOf)
+    private void RehashReferences(int size)
+    {
+        var table = new int[size];
+        for (var i = 0; i < _count; i++)
+        {
+            ref var slot = ref this[i];
+            if (slot.State != SlotState.Duplicate)
+            {
+                Insert(table, i, slot.Hash);
+            }
+        }
+
+        _table = table;
+    }
+
+    private static int[] Rehash(int size, BatchSlot[] batches, int count)
     {
         var table = new int[size];
         for (var i = 0; i < count; i++)
         {
-            if (include(items[i]))
-            {
-                Insert(table, i, hashOf(items[i]));
-            }
+            Insert(table, i, batches[i].Hash);
         }
 
         return table;
