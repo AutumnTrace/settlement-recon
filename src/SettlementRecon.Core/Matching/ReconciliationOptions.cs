@@ -34,6 +34,13 @@ public sealed class ReconciliationOptions
     [Range(1, 1_024)]
     public int ChannelCapacity { get; set; } = 8;
 
+    /// <summary>
+    /// Explained items kept per provider. Counts stay exact beyond this; the cap only protects memory and report
+    /// size when a whole file is wrong (for example last month's ledger).
+    /// </summary>
+    [Range(1, 10_000_000)]
+    public int MaxItemsPerProvider { get; set; } = 100_000;
+
     /// <summary>The tolerance that applies to a given ledger amount.</summary>
     public long AmountToleranceFor(long amount)
     {

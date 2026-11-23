@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>recon</AssemblyName>
+    <RootNamespace>SettlementRecon.Cli</RootNamespace>
+    <Description>Command-line front end: reconcile files, generate sample data, list formats.</Description>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SettlementRecon.Core\SettlementRecon.Core.csproj" />
+    <ProjectReference Include="..\SettlementRecon.SampleData\SettlementRecon.SampleData.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SettlementRecon.Tests" />
+  </ItemGroup>
+
+</Project>
