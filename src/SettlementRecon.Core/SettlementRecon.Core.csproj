@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>SettlementRecon</RootNamespace>
+    <Description>Streaming settlement reconciliation engine: provider parsers, hash-join matching and explainable breaks.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SettlementRecon.Tests" />
+  </ItemGroup>
+
+</Project>

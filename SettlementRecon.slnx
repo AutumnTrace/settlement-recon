@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SettlementRecon.Core/SettlementRecon.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SettlementRecon.Tests/SettlementRecon.Tests.csproj" />
+  </Folder>
+</Solution>
