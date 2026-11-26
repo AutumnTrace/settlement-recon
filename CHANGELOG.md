@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- `recon run` refuses tolerances outside the ranges the worker enforces on start, naming each option and its allowed range. A negative fee tolerance used to report every match as a fee difference, and a 20,000 bps amount tolerance hid real mismatches, both with exit code 0 (#9)
+
 ## [0.1.0] - 2026-11-23
 
 First release.

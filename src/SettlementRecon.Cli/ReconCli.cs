@@ -1,5 +1,7 @@
 using System.CommandLine;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.Reflection;
 using SettlementRecon.Formats;
 using SettlementRecon.Matching;
 using SettlementRecon.Pipeline;
@@ -68,10 +70,6 @@ public static class ReconCli
                     throw new ArgumentException($"Got {files.Length} settlement file(s) but {names.Length} --provider value(s); give one per file or none.");
                 }
 
-                var inputs = files
-                    .Select((file, i) => (Format: names.Length > 0 ? formats.Get(names[i]) : InferFormat(formats, file), Path: Existing(file)))
-                    .ToArray();
-
                 var options = new ReconciliationOptions
                 {
                     AmountToleranceMinor = parse.GetValue(amountMinor),
@@ -80,6 +78,11 @@ public static class ReconCli
                     DateWindowDays = parse.GetValue(window),
                     AmountAndDateFallback = !parse.GetValue(noFallback),
                 };
+                EnsureInRange(options);
+
+                var inputs = files
+                    .Select((file, i) => (Format: names.Length > 0 ? formats.Get(names[i]) : InferFormat(formats, file), Path: Existing(file)))
+                    .ToArray();
 
                 var request = ReconciliationRequest.FromPaths(Existing(parse.GetRequiredValue(ledger)), inputs);
                 var report = await new ReconciliationEngine(options).RunAsync(request, cancellationToken);
@@ -184,4 +187,30 @@ public static class ReconCli
 
     private static string Existing(FileInfo file) =>
         file.Exists ? file.FullName : throw new FileNotFoundException($"File not found: {file.FullName}");
+
+    /// <summary>
+    /// Applies the ranges the worker enforces on start (the <see cref="RangeAttribute"/>s on
+    /// <see cref="ReconciliationOptions"/>). Outside them the report is wrong without looking wrong: a negative
+    /// tolerance turns exact matches into breaks, and a very large one hides real ones.
+    /// </summary>
+    private static void EnsureInRange(ReconciliationOptions options)
+    {
+        var results = new List<ValidationResult>();
+        if (Validator.TryValidateObject(options, new ValidationContext(options), results, validateAllProperties: true))
+        {
+            return;
+        }
+
+        var problems = results
+            .SelectMany(result => result.MemberNames)
+            .Select(member => typeof(ReconciliationOptions).GetProperty(member)!)
+            .Select(property => property.GetCustomAttribute<RangeAttribute>() is { } range
+                ? string.Create(Invariant, $"{OptionName(property.Name)} must be between {range.Minimum} and {range.Maximum} (got {property.GetValue(options)}).")
+                : $"{OptionName(property.Name)} is not valid.");
+        throw new ArgumentException(string.Join(" ", problems));
+    }
+
+    /// <summary>AmountToleranceMinor is --amount-tolerance-minor: the run options are named after the properties.</summary>
+    private static string OptionName(string property) =>
+        "--" + string.Concat(property.Select((c, i) => char.IsUpper(c) && i > 0 ? $"-{char.ToLowerInvariant(c)}" : $"{char.ToLowerInvariant(c)}"));
 }

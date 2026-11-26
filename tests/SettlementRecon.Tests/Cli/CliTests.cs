@@ -90,6 +90,33 @@ public class CliTests
         Assert.That(run.Error, Does.Not.Contain("   at "));
     }
 
+    [TestCase("--amount-tolerance-minor", "-1", "--amount-tolerance-minor must be between 0 and 1000000 (got -1).")]
+    [TestCase("--amount-tolerance-bps", "20000", "--amount-tolerance-bps must be between 0 and 1000 (got 20000).")]
+    [TestCase("--fee-tolerance-minor", "-1", "--fee-tolerance-minor must be between 0 and 1000000 (got -1).")]
+    [TestCase("--date-window-days", "32", "--date-window-days must be between 0 and 31 (got 32).")]
+    public async Task Tolerances_outside_the_worker_ranges_are_refused_before_any_file_is_read(string option, string value, string message)
+    {
+        using var temp = new TempDirectory();
+
+        // The files don't exist: the range check has to come first.
+        var run = await Recon("run", "-l", Path.Combine(temp.Path, "nope.csv"), "-s", Path.Combine(temp.Path, "orbit.csv"), "-o", temp.Path, option, value);
+
+        Assert.That(run.ExitCode, Is.EqualTo(ReconCli.ExitError));
+        Assert.That(run.Error.Trim(), Is.EqualTo($"error: {message}"));
+        Assert.That(run.Output, Is.Empty);
+    }
+
+    [Test]
+    public async Task Every_out_of_range_option_is_named_at_once()
+    {
+        using var temp = new TempDirectory();
+
+        var run = await Recon("run", "-l", "ledger.csv", "-s", "orbit.csv", "-o", temp.Path, "--amount-tolerance-minor", "-1", "--fee-tolerance-minor", "-1");
+
+        Assert.That(run.ExitCode, Is.EqualTo(ReconCli.ExitError));
+        Assert.That(run.Error, Does.Contain("--amount-tolerance-minor").And.Contain("--fee-tolerance-minor"));
+    }
+
     [Test]
     public async Task Formats_lists_every_registered_provider()
     {

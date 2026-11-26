@@ -14,7 +14,7 @@ Built with **.NET 10**, `System.IO.Pipelines`, `System.Threading.Channels` and *
 ![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-8.0-47A248?logo=mongodb&logoColor=white)
 ![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-metrics%20%2B%20traces-425CC7?logo=opentelemetry&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-210%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-215%20passing-brightgreen)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [Quick start](#-quick-start) · [How it works](#-how-it-works) · [Example output](#-example-output) · [REST API](#-rest-api) · [Performance](#-performance) · [Design decisions](#-design-decisions) · [Changelog](CHANGELOG.md)
@@ -40,7 +40,7 @@ Every payment provider (PSP) sends a settlement report: what it collected, what 
 | 📥 **Inbox worker** | Hosted service: atomic claim of dropped run folders, archive or `failed/` with `error.txt`, re-queue after a crash |
 | 🍃 **MongoDB + REST API** | Runs and breaks stored as documents, paged and filtered through indexes; RFC 9457 problem details; in-memory fallback for local runs |
 | 📈 **Observability** | Serilog, OpenTelemetry metrics (rows, breaks by type, run duration, throughput) and traces, OTLP or Azure Monitor, health probes |
-| 🧪 **Tested** | 203 NUnit tests plus 7 Testcontainers MongoDB tests, property-based amount parsing, a differential test against the naive baseline |
+| 🧪 **Tested** | 208 NUnit tests plus 7 Testcontainers MongoDB tests, property-based amount parsing, a differential test against the naive baseline |
 | 🐳 **Ship-ready** | Chiseled non-root image, `docker compose` with MongoDB, GHCR releases, CodeQL, Dependabot |
 
 ## 🧩 Part of Payments Lab
@@ -609,7 +609,7 @@ Each has an ADR with context, consequences and the alternatives that were turned
 ## ✅ Testing
 
 ```bash
-dotnet test --filter "Category!=Integration"   # 203 tests, no Docker needed
+dotnet test --filter "Category!=Integration"   # 208 tests, no Docker needed
 dotnet test                                    # + 7 Testcontainers MongoDB tests (needs Docker; CI runs them)
 ```
 
@@ -621,7 +621,7 @@ dotnet test                                    # + 7 Testcontainers MongoDB test
 | `Matching/*` | Tolerance boundaries, fee and currency rules, batch comparison, ledger index growth and duplicates, the amount-and-date fallback including ambiguity |
 | `Pipeline/*` | A hand-written scenario asserting the exact reason for every outcome; failure propagation, cancellation, several files per provider, item cap, manifest path traversal |
 | `EndToEnd/*` | Generator → engine for several seeds against `expected.json`; every outcome and rule exercised; tight channels give the same answer; byte-identical generation; JSON round trip; Markdown; naive baseline equivalence |
-| `Cli/*` | `generate` + `run` in-process, exit codes, `--fail-on-breaks`, error messages without stack traces |
+| `Cli/*` | `generate` + `run` in-process, exit codes, `--fail-on-breaks`, option ranges, error messages without stack traces |
 | `Worker/*` | `WebApplicationFactory`: inbox → run → API, filters and paging, problem details, health, failed folders, half-copied folders, re-queue after shutdown |
 | `Integration/*` | Testcontainers MongoDB 8: store round trip, indexes, idempotent saves, paging and filters, the whole worker against Mongo, startup validation |
 
