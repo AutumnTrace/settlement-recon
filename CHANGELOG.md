@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-26
+
 ### Fixed
 
 - `recon run` refuses tolerances outside the ranges the worker enforces on start, naming each option and its allowed range. A negative fee tolerance used to report every match as a fee difference, and a 20,000 bps amount tolerance hid real mismatches, both with exit code 0 (#9)
@@ -32,5 +34,6 @@ First release.
 
 - The ledger index stores entries in fixed 1 MiB chunks, so growing never copies them; a 1M-transaction run allocates 113.76 MB, down from about 310 MB (#4)
 
-[Unreleased]: https://github.com/AutumnTrace/settlement-recon/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/AutumnTrace/settlement-recon/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/AutumnTrace/settlement-recon/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/AutumnTrace/settlement-recon/releases/tag/v0.1.0
